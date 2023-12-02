@@ -8,8 +8,6 @@ export const useProductMutation = () => {
     mutationFn: productActions.createProduct,
 
     onMutate: (product) => {
-      console.log("Mutando - Optimistic update")
-
       // Optimistic Product
       const optimisticProduct = { id: Math.random(), ...product }
 
@@ -25,8 +23,6 @@ export const useProductMutation = () => {
     },
 
     onSuccess: (product, variables, context) => {
-      console.log(product, variables, context)
-
       // Para invalidar la query
       // queryClient.invalidateQueries({
       //   queryKey: ["products", { filterKey: product.category }],
@@ -38,6 +34,7 @@ export const useProductMutation = () => {
         exact: true,
       })
 
+      //Filtra los productos por categoria
       queryClient.setQueryData<Product[]>(
         ["products", { filterKey: product.category }],
         (old) => {
@@ -47,6 +44,26 @@ export const useProductMutation = () => {
             return cacheProduct.id === context?.optimisticProduct.id
               ? product
               : cacheProduct
+          })
+        }
+      )
+    },
+
+    onError: (error, variables, context) => {
+      // Borrar el optimistic Product despues de que ya se actualizo
+      queryClient.removeQueries({
+        queryKey: ["product", context?.optimisticProduct.id],
+        exact: true,
+      })
+
+      //Filtra los productos por categoria
+      queryClient.setQueryData<Product[]>(
+        ["products", { filterKey: variables.category }],
+        (old) => {
+          if (!old) return []
+
+          return old.filter((cacheProduct) => {
+            return cacheProduct.id !== context?.optimisticProduct.id
           })
         }
       )

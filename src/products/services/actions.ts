@@ -21,7 +21,6 @@ export const getProducts = async ({
 }
 
 export const getProductById = async (id: number): Promise<Product> => {
-  await sleep(5)
   const { data } = await productsApi.get<Product>(`/products/${id}`)
 
   return data
