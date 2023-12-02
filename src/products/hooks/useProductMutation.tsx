@@ -21,18 +21,33 @@ export const useProductMutation = () => {
           return [...old, optimisticProduct]
         }
       )
+      return { optimisticProduct }
     },
 
-    onSuccess: (product) => {
+    onSuccess: (product, variables, context) => {
+      console.log(product, variables, context)
+
       // Para invalidar la query
       // queryClient.invalidateQueries({
       //   queryKey: ["products", { filterKey: product.category }],
       // })
+
+      // Borrar el optimistic Product despues de que ya se actualizo
+      queryClient.removeQueries({
+        queryKey: ["product", context?.optimisticProduct.id],
+        exact: true,
+      })
+
       queryClient.setQueryData<Product[]>(
         ["products", { filterKey: product.category }],
         (old) => {
           if (!old) return [product]
-          return [...old, product]
+
+          return old.map((cacheProduct) => {
+            return cacheProduct.id === context?.optimisticProduct.id
+              ? product
+              : cacheProduct
+          })
         }
       )
     },
